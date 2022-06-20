@@ -144,6 +144,10 @@
 #define __NR_lstat	84
 #define __NR_readlink	85
 #define __NR_uselib	86
+#define __NR_execve2 87
+#define __NR_getdents 88
+#define __NR_sleep 90
+#define __NR_getcwd 91
 #define _syscall0(type,name) \
 type name(void) \
 { \
@@ -213,6 +217,12 @@ int close(int fildes);
 int creat(const char * filename, mode_t mode);
 int dup(int fildes);
 int execve(const char * filename, char ** argv, char ** envp);
+
+int execve2(const char * filename, char ** argv, char ** envp);//my
+int getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
+int sleep(unsigned int seconds);
+long getcwd(char * buf, size_t size);
+
 int execv(const char * pathname, char ** argv);
 int execvp(const char * file, char ** argv);
 int execl(const char * pathname, char * arg0, ...);
