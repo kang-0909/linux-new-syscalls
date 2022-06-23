@@ -538,11 +538,12 @@ restart_interp:
 
 	unsigned long now_addr = current->start_code;
 	unsigned long last_page = (current->start_code + current->brk - 1) & 0xfffff000;
-	printk("%0x %0x\n", now_addr, last_page);
+	//printk("%0x %0x\n", now_addr, last_page);
 	do {
 		load_page(now_addr);
 		now_addr += 4096;
-	} while ((now_addr) & 0xfffff000 <= last_page);
+		//printk("%0x %0x &&", now_addr, last_page);
+	} while (((now_addr) & 0xfffff000) <= last_page);
 
 
 	return 0;

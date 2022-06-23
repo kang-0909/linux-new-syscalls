@@ -442,7 +442,7 @@ void load_page(unsigned long address)
 	int block,i;
 	printk("%0x\n", address);
 	address &= 0xfffff000;
-	
+	printk("loading page %0x...\n", address);
 	tmp = address - current->start_code;
 	if (!current->executable || tmp >= current->end_data) {
 		get_empty_page(address);
