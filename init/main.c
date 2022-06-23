@@ -211,6 +211,6 @@ void init(void)
 
 void print_nr(int sid)
 {
-	if (sid > 86 || sid == 11)
+	if (sid > 86)
 		printk(" --syscall: sid=%d, pid=%d\n", sid, current->pid);
 }

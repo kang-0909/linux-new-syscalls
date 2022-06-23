@@ -370,8 +370,8 @@ void do_no_page(unsigned long error_code,unsigned long address)
 	unsigned long page;
 	int block,i;
 
-	if (current->pid > 5)
-		printk(" --do_no_page: address=%x, pid=%d\n", address, current->pid);
+	// if (current->pid > 5)
+	// 	printk(" --do_no_page: address=%x, pid=%d\n", address, current->pid);
 		
 	address &= 0xfffff000;
 	tmp = address - current->start_code;
