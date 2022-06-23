@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <signal.h>
 #include <a.out.h>
 
 #include <linux/fs.h>
@@ -27,6 +28,15 @@
 #include <linux/kernel.h>
 #include <linux/mm.h>
 #include <asm/segment.h>
+
+
+#include <asm/system.h>
+
+#include <linux/head.h>
+
+
+#include <fcntl.h>
+#include <sys/types.h>
 
 extern int sys_exit(int exit_code);
 extern int sys_close(int fd);
@@ -358,6 +368,9 @@ exec_error1:
 	return(retval);
 }
 
+
+extern load_page(unsigned long);
+
 int do_execve2(unsigned long * eip,long tmp,char * filename,
 	char ** argv, char ** envp)
 {
@@ -522,6 +535,16 @@ restart_interp:
 		put_fs_byte(0,(char *) (i++));
 	eip[0] = ex.a_entry;		/* eip, magic happens :-) */
 	eip[3] = p;			/* stack pointer */
+
+	unsigned long now_addr = current->start_code;
+	unsigned long last_page = (current->start_code + current->brk - 1) & 0xfffff000;
+	printk("%0x %0x\n", now_addr, last_page);
+	do {
+		load_page(now_addr);
+		now_addr += 4096;
+	} while ((now_addr) & 0xfffff000 <= last_page);
+
+
 	return 0;
 exec_error2:
 	iput(inode);
@@ -530,16 +553,34 @@ exec_error1:
 		free_page(page[i]);
 	return(retval);
 }
+struct linux_dirent {
+	unsigned long	d_ino;
+	unsigned long	d_off;
+	unsigned short	d_reclen;
+	char		d_name[1];
+};
+
+
+
 
 int sys_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count) {
+	struct file *file = current->filp[fd];
+	struct m_inode *inode = file->f_inode;
+	printk("################\n");
+	unsigned int t = inode->i_zone[0] * 0x400 + 0x22;
+	printk("%s\n", (char*)t);
+	printk("%%%%%\n");
+
 	return 0;
 }
+
 
 int sys_sleep(unsigned int seconds) {
-	return 0;
+	printk("$$$$$$$$$$$\n");
+	return 1;
+
 }
 
-int sys_getcwd(char *buf, size_t size) {
+int sys_getcwd(char *cwdbuf, size_t size) {
 
-	return NULL;
 }

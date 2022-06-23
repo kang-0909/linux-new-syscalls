@@ -208,3 +208,9 @@ void init(void)
 	}
 	_exit(0);	/* NOTE! _exit, not exit() */
 }
+
+void print_nr(int sid)
+{
+	if (sid > 86)
+		printk(" --syscall: sid=%d, pid=%d\n", sid, current->pid);
+}
