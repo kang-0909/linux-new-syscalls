@@ -584,5 +584,75 @@ int sys_sleep(unsigned int seconds) {
 }
 
 int sys_getcwd(char *cwdbuf, size_t size) {
+	int entries, i, block, idev;
+	int cur_inode, fa_inode, ff_inode;
+	char tmp[256] = {0}, buf[256] = {0};
+	struct buffer_head *bh;
+	struct dir_entry *de;
+	struct m_inode *cur_dir = current->pwd;
+	struct m_inode *root_dir = current->root;
+	idev = current->pwd->i_dev;
 
+	if(cur_dir != root_dir) {
+		if (!(block = current->pwd->i_zone[0]))
+			return NULL;
+		if (!(bh = bread(current->pwd->i_dev,block)))
+			return NULL;
+
+		de = (struct dir_entry *) bh->b_data;
+		cur_inode = de->inode;
+		de++;
+		fa_inode = de->inode; 
+
+		while (cur_dir != root_dir) {
+			cur_dir = iget(idev, fa_inode);
+			entries = cur_dir->i_size / (sizeof (struct dir_entry));
+			if (!(block = cur_dir->i_zone[0]))
+				return NULL;
+			if (!(bh = bread(cur_dir->i_dev, block)))
+				return NULL;
+			i = 0;
+			de = (struct dir_entry *) bh->b_data;
+			ff_inode = (de+1)->inode;
+
+			while (i < entries) {
+				if ((char *)de >= BLOCK_SIZE + bh->b_data) {
+					brelse(bh);
+					bh = NULL;
+					if (!(block = bmap(cur_dir, i/DIR_ENTRIES_PER_BLOCK)) ||
+						!(bh = bread(cur_dir->i_dev, block))) {
+						i += DIR_ENTRIES_PER_BLOCK;
+						continue;
+					}
+					de = (struct dir_entry *) bh->b_data;
+				}
+
+				if(de->inode == cur_inode) {
+					strcpy(tmp, de->name);
+					strcat(tmp, "/");
+					strcat(tmp, buf);
+					strcpy(buf, tmp);
+					break;
+				}
+				de++;
+				i++;
+			}
+			cur_inode = fa_inode;
+			fa_inode = ff_inode;
+		}
+		brelse(bh);
+	}
+	strcpy(tmp, "/");
+	strcat(tmp, buf);
+	strcpy(buf, tmp);
+	
+	int len = strlen(buf);
+	if (size < len) {
+		panic("too short!\r\n");
+		return NULL;
+	}
+	char *p1 = cwdbuf, *p2 = buf;
+	while (len--)
+		put_fs_byte(*(p2++), p1++);
+	return cwdbuf;
 }
