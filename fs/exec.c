@@ -555,7 +555,12 @@ exec_error1:
 	return(retval);
 }
 
-
+struct linux_dirent {
+	long           d_ino;
+	off_t          d_off;
+	unsigned short d_reclen;
+	char           d_name[14];
+};
 
 int sys_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count) {
 	int entries, i, block, idev, num_bytes = 0;
@@ -575,6 +580,7 @@ int sys_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count)
 	entries = cur_dir->i_size / (sizeof (struct dir_entry));
 	i = 0;
 	while (i < entries) {
+		if (num_bytes + sizeof(struct linux_dirent) > count) break;
 		if ((char *)de >= BLOCK_SIZE + bh->b_data) {
 			brelse(bh);
 			bh = NULL;
@@ -585,17 +591,19 @@ int sys_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count)
 			}
 			de = (struct dir_entry *) bh->b_data;
 		}
-		tmp.d_ino = de->inode;
-		int k  = 0;
-		for(k; k < NAME_LEN; k++) 
-			tmp.d_name[k] = de->name[k];
-		tmp.d_off = 0;
-		tmp.d_reclen = sizeof(tmp);
-		buf = &tmp;
-		for (k=0; k < tmp.d_reclen; k++) {
-			put_fs_byte(*(buf+i), (char *)dirp + i + num_bytes);
+		if (de->inode) {
+			tmp.d_ino = de->inode;
+			
+			strcpy(tmp.d_name, de->name);
+			tmp.d_off = 0;
+			tmp.d_reclen = sizeof(tmp);
+			buf = &tmp;
+			int k  = 0;
+			for (k = 0; k < tmp.d_reclen; k++) {
+				put_fs_byte(*(buf + k), (char *)dirp + k + num_bytes);
+			}
+			num_bytes += tmp.d_reclen;
 		}
-		num_bytes += tmp.d_reclen;
 		i++;
 		de++;
 	}
