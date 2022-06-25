@@ -554,25 +554,53 @@ exec_error1:
 		free_page(page[i]);
 	return(retval);
 }
-struct linux_dirent {
-	unsigned long	d_ino;
-	unsigned long	d_off;
-	unsigned short	d_reclen;
-	char		d_name[1];
-};
-
 
 
 
 int sys_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count) {
-	struct file *file = current->filp[fd];
-	struct m_inode *inode = file->f_inode;
-	printk("################\n");
-	unsigned int t = inode->i_zone[0] * 0x400 + 0x22;
-	printk("%s\n", (char*)t);
-	printk("%%%%%\n");
+	int entries, i, block, idev, num_bytes = 0;
+	struct buffer_head *bh;
+	struct dir_entry *de;
+	struct linux_dirent tmp;
+	struct m_inode *cur_dir = current->filp[fd]->f_inode;
+	idev = cur_dir->i_dev;
+	char *buf;
 
-	return 0;
+	if (!(block = cur_dir->i_zone[0]))
+		return -1;
+	if (!(bh = bread(idev,block)))
+		return -1;
+
+	de = (struct dir_entry *) bh->b_data;
+	entries = cur_dir->i_size / (sizeof (struct dir_entry));
+	i = 0;
+	while (i < entries) {
+		if ((char *)de >= BLOCK_SIZE + bh->b_data) {
+			brelse(bh);
+			bh = NULL;
+			if (!(block = bmap(cur_dir, i/DIR_ENTRIES_PER_BLOCK)) ||
+				!(bh = bread(cur_dir->i_dev, block))) {
+				i += DIR_ENTRIES_PER_BLOCK;
+				continue;
+			}
+			de = (struct dir_entry *) bh->b_data;
+		}
+		tmp.d_ino = de->inode;
+		int k  = 0;
+		for(k; k < NAME_LEN; k++) 
+			tmp.d_name[k] = de->name[k];
+		tmp.d_off = 0;
+		tmp.d_reclen = sizeof(tmp);
+		buf = &tmp;
+		for (k=0; k < tmp.d_reclen; k++) {
+			put_fs_byte(*(buf+i), (char *)dirp + i + num_bytes);
+		}
+		num_bytes += tmp.d_reclen;
+		i++;
+		de++;
+	}
+	brelse(bh);
+	return num_bytes;
 }
 
 
