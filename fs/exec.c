@@ -614,8 +614,8 @@ int sys_sleep(unsigned int seconds) {
 	sys_signal(14, 1, 0);
 	sys_alarm(seconds);
 	sys_pause();
-	//panic("##########\n\n");
-	printk("%d %d\r\n", current->alarm,jiffies);
+	//printk("%d %d\r\n", current->alarm,jiffies);
+	//fflush(stdout);
 	if (current->alarm <= jiffies) return 0;
 	else return -1;
 }
