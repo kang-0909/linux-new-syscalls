@@ -108,7 +108,7 @@ static inline void init_bucket_desc()
 	}
 	/*
 	 * This is done last, to avoid race conditions in case 
-	 * get_free_page() sleeps and this routine gets called again....
+	 * get_free_page() s and this routine gets called again....
 	 */
 	bdesc->next = free_bucket_desc;
 	free_bucket_desc = first;

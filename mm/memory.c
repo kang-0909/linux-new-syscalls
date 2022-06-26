@@ -440,7 +440,7 @@ void load_page(unsigned long address)
 	unsigned long tmp;
 	unsigned long page;
 	int block,i;
-	printk("%0x\n", address);
+	//printk("%0x\n", address);
 	address &= 0xfffff000;
 	printk("loading page %0x...\n", address);
 	tmp = address - current->start_code;

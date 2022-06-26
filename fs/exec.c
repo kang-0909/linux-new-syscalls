@@ -538,11 +538,9 @@ restart_interp:
 
 	unsigned long now_addr = current->start_code;
 	unsigned long last_page = (current->start_code + current->brk - 1) & 0xfffff000;
-	//printk("%0x %0x\n", now_addr, last_page);
 	do {
 		load_page(now_addr);
 		now_addr += 4096;
-		//printk("%0x %0x &&", now_addr, last_page);
 	} while (((now_addr) & 0xfffff000) <= last_page);
 
 
@@ -613,10 +611,13 @@ int sys_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count)
 
 
 int sys_sleep(unsigned int seconds) {
-	sys_signal(14, 1, 14);
+	sys_signal(14, 1, 0);
 	sys_alarm(seconds);
 	sys_pause();
-	return 0;
+	//panic("##########\n\n");
+	printk("%d %d\r\n", current->alarm,jiffies);
+	if (current->alarm <= jiffies) return 0;
+	else return -1;
 }
 
 int sys_getcwd(char *cwdbuf, size_t size) {
@@ -634,7 +635,6 @@ int sys_getcwd(char *cwdbuf, size_t size) {
 			return NULL;
 		if (!(bh = bread(current->pwd->i_dev,block)))
 			return NULL;
-
 		de = (struct dir_entry *) bh->b_data;
 		cur_inode = de->inode;
 		de++;
